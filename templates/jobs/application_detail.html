@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load i18n %}
+
+{% block title %}Application Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Application Details</h2>
+            <p class="text-muted">
+                Application for {{ job.title }} at {{ job.company }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Application Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6>Status</h6>
+                        <span class="badge {% if application.status == 'PENDING' %}bg-warning{% elif application.status == 'ACCEPTED' %}bg-success{% elif application.status == 'REJECTED' %}bg-danger{% else %}bg-secondary{% endif %} fs-6">
+                            {{ application.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Overall Match Score</h6>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar {% if application.matching_score >= 75 %}bg-success{% elif application.matching_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                 role="progressbar"
+                                 style="width: {{ application.matching_score }}%"
+                                 aria-valuenow="{{ application.matching_score }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                                {{ application.matching_score|floatformat:1 }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">Based on required skills (60%), preferred skills (20%), and experience (20%)</small>
+                    </div>
+
+                    {% if is_recruiter %}
+                    <div class="mb-4">
+                        <h6>Detailed Match Analysis</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <!-- Required Skills -->
+                                <div class="mb-3">
+                                    <label class="fw-bold">Required Skills Match (60%)</label>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar {% if application.required_skills_score >= 75 %}bg-success{% elif application.required_skills_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                             role="progressbar"
+                                             style="width: {{ application.required_skills_score }}%"
+                                             aria-valuenow="{{ application.required_skills_score }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            {{ application.required_skills_score|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    {% if application.matching_required_skills %}
+                                        <div class="mt-2">
+                                            <small class="text-success">Matching: 
+                                                {% for skill in application.matching_required_skills %}
+                                                    <span class="badge bg-success">{{ skill }}</span>
+                                                {% endfor %}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                    {% if application.missing_required_skills %}
+                                        <div class="mt-1">
+                                            <small class="text-danger">Missing: 
+                                                {% for skill in application.missing_required_skills %}
+                                                    <span class="badge bg-danger">{{ skill }}</span>
+                                                {% endfor %}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Preferred Skills -->
+                                <div class="mb-3">
+                                    <label class="fw-bold">Preferred Skills Match (20%)</label>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar {% if application.preferred_skills_score >= 75 %}bg-success{% elif application.preferred_skills_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                             role="progressbar"
+                                             style="width: {{ application.preferred_skills_score }}%"
+                                             aria-valuenow="{{ application.preferred_skills_score }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            {{ application.preferred_skills_score|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    {% if application.matching_preferred_skills %}
+                                        <div class="mt-2">
+                                            <small class="text-success">Matching: 
+                                                {% for skill in application.matching_preferred_skills %}
+                                                    <span class="badge bg-success">{{ skill }}</span>
+                                                {% endfor %}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Experience -->
+                                <div>
+                                    <label class="fw-bold">Experience Match (20%)</label>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar {% if application.experience_score >= 75 %}bg-success{% elif application.experience_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                             role="progressbar"
+                                             style="width: {{ application.experience_score }}%"
+                                             aria-valuenow="{{ application.experience_score }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            {{ application.experience_score|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        Candidate has {{ application.experience_years }} years of experience 
+                                        (Required: {{ job.min_experience_years }} years)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        <h6>Applied On</h6>
+                        <p>{{ application.created_at|date:"F j, Y, P" }}</p>
+                    </div>
+
+                    {% if application.cover_letter %}
+                        <div class="mb-4">
+                            <h6>Cover Letter</h6>
+                            <div class="card">
+                                <div class="card-body bg-light">
+                                    {{ application.cover_letter|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if is_recruiter and application.status == 'PENDING' %}
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-success me-2" onclick="updateApplicationStatus('{{ application.id }}', 'ACCEPTED')">
+                                <i class="bi bi-check-circle"></i>
+                                {% translate "Accept Candidate" %}
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="updateApplicationStatus('{{ application.id }}', 'REJECTED')">
+                                <i class="bi bi-x-circle"></i>
+                                {% translate "Reject Candidate" %}
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if resume %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Resume Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-file-pdf fa-2x text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">{{ resume.original_filename }}</h6>
+                            <p class="text-muted small mb-0">
+                                Uploaded {{ resume.uploaded_at|timesince }} ago
+                            </p>
+                        </div>
+                        {% if resume.file %}
+                            <a href="{{ resume.file.url }}" class="btn btn-outline-primary btn-sm ms-auto" target="_blank">
+                                <i class="fas fa-download me-1"></i>Download
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    {% if resume.extracted_skills %}
+                        <h6 class="mb-2">Skills Extracted:</h6>
+                        <div class="d-flex flex-wrap gap-2 mb-4">
+                            {% for skill in resume.extracted_skills %}
+                                <span class="badge bg-primary">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Job Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl>
+                        <dt>Company</dt>
+                        <dd>{{ job.company }}</dd>
+
+                        <dt>Location</dt>
+                        <dd>{{ job.location }}</dd>
+
+                        <dt>Experience Required</dt>
+                        <dd>{{ job.min_experience_years }} years</dd>
+
+                        <dt>Posted On</dt>
+                        <dd>{{ job.created_at|date:"F j, Y" }}</dd>
+                    </dl>
+
+                    <a href="{% url 'jobs:detail' job.id %}" class="btn btn-outline-primary">
+                        View Full Job Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_recruiter %}
+{% block extra_js %}
+<script>
+function updateApplicationStatus(applicationId, status) {
+    if (!confirm('Are you sure you want to ' + status.toLowerCase() + ' this candidate?')) {
+        return;
+    }
+
+    fetch(`/jobs/applications/${applicationId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error updating application status: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the application status.');
+    });
+}
+</script>
+{% endblock %}
+{% endif %}
+{% endblock %} 

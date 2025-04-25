@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Applications - {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Applications for {{ job.title }}</h1>
+            <p class="text-muted mb-0">{{ applications.count }} application(s) received</p>
+        </div>
+        <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Job
+        </a>
+    </div>
+
+    <!-- Applications List -->
+    {% if applications %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link" id="all-tab" data-bs-toggle="tab" href="#all" role="tab" aria-controls="all" aria-selected="true">
+                            All Applications ({{ applications.count }})
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="shortlisted-tab" data-bs-toggle="tab" href="#shortlisted" role="tab" aria-controls="shortlisted" aria-selected="false">
+                            Shortlisted ({{ applications.shortlisted.count }})
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content">
+                    <div class="tab-pane fade show" id="all" role="tabpanel" aria-labelledby="all-tab">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Candidate</th>
+                                        <th>Match Score</th>
+                                        <th>Experience</th>
+                                        <th>Skills Match</th>
+                                        <th>Status</th>
+                                        <th>Applied On</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in applications %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div>
+                                                    <h6 class="mb-0">{{ application.candidate.get_full_name }}</h6>
+                                                    <small class="text-muted">{{ application.candidate.email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar {% if application.match_score >= 80 %}bg-success{% elif application.match_score >= 60 %}bg-info{% elif application.match_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         style="width: {{ application.match_score }}%"
+                                                         role="progressbar"
+                                                         aria-valuenow="{{ application.match_score }}"
+                                                         aria-valuemin="0"
+                                                         aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <span class="ms-2 h5 mb-0">{{ application.match_score }}%</span>
+                                            </div>
+                                            <div class="small mt-2">
+                                                <div class="d-flex flex-column">
+                                                    <div class="mb-2">
+                                                        <strong>Required Skills:</strong>
+                                                        <span class="badge {% if application.required_skills_score >= 80 %}bg-success{% elif application.required_skills_score >= 60 %}bg-info{% elif application.required_skills_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                            {{ application.required_skills_score }}%
+                                                        </span>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <strong>Preferred Skills:</strong>
+                                                        <span class="badge {% if application.preferred_skills_score >= 80 %}bg-success{% elif application.preferred_skills_score >= 60 %}bg-info{% elif application.preferred_skills_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                            {{ application.preferred_skills_score }}%
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Experience Match:</strong>
+                                                        <span class="badge {% if application.experience_score >= 80 %}bg-success{% elif application.experience_score >= 60 %}bg-info{% elif application.experience_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                            {{ application.experience_score }}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if application.resume %}
+                                                {{ application.experience_years }} years
+                                                <div class="small text-muted">
+                                                    Required: {{ job.min_experience_years }} years
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">No resume</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if application.resume %}
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    {% for skill in application.matching_required_skills %}
+                                                        <span class="badge bg-success">{{ skill }}</span>
+                                                    {% endfor %}
+                                                    {% for skill in application.missing_required_skills %}
+                                                        <span class="badge bg-danger">{{ skill }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                                {% if application.matching_preferred_skills %}
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        {% for skill in application.matching_preferred_skills %}
+                                                            <span class="badge bg-info">{{ skill }}</span>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">No resume</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if application.status == 'SHORTLISTED' %}bg-success{% elif application.status == 'REJECTED' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                                {{ application.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ application.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'jobs:application_detail' application.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if application.resume %}
+                                                    <a href="{{ application.resume.file.url }}" class="btn btn-sm btn-outline-info" target="_blank">
+                                                        <i class="fas fa-file-alt"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <button class="btn btn-sm btn-outline-secondary" disabled title="No resume available">
+                                                        <i class="fas fa-file-alt"></i>
+                                                    </button>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-sm btn-outline-success" onclick="updateStatus('{{ application.pk }}', 'SHORTLISTED')">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="updateStatus('{{ application.pk }}', 'REJECTED')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="shortlisted" role="tabpanel" aria-labelledby="shortlisted-tab">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Candidate</th>
+                                        <th>Match Score</th>
+                                        <th>Experience</th>
+                                        <th>Skills Match</th>
+                                        <th>Status</th>
+                                        <th>Applied On</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in applications.shortlisted %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div>
+                                                    <h6 class="mb-0">{{ application.candidate.get_full_name }}</h6>
+                                                    <small class="text-muted">{{ application.candidate.email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar {% if application.match_score >= 80 %}bg-success{% elif application.match_score >= 60 %}bg-info{% elif application.match_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         style="width: {{ application.match_score }}%"
+                                                         role="progressbar"
+                                                         aria-valuenow="{{ application.match_score }}"
+                                                         aria-valuemin="0"
+                                                         aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <span class="ms-2 h5 mb-0">{{ application.match_score }}%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if application.resume %}
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                                        <div class="progress-bar {% if application.experience_score >= 80 %}bg-success{% elif application.experience_score >= 60 %}bg-info{% elif application.experience_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                             style="width: {{ application.experience_score }}%"
+                                                             role="progressbar"
+                                                             aria-valuenow="{{ application.experience_score }}"
+                                                             aria-valuemin="0"
+                                                             aria-valuemax="100">
+                                                        </div>
+                                                    </div>
+                                                    <span class="ms-2">{{ application.experience_years }} years</span>
+                                                </div>
+                                                <div class="small text-muted mt-1">
+                                                    Required: {{ job.min_experience_years }} years
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">No resume</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if application.resume %}
+                                                <div class="d-flex flex-column">
+                                                    <div class="mb-2">
+                                                        <div class="d-flex align-items-center mb-1">
+                                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                                <div class="progress-bar {% if application.required_skills_score >= 80 %}bg-success{% elif application.required_skills_score >= 60 %}bg-info{% elif application.required_skills_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                                     style="width: {{ application.required_skills_score }}%"
+                                                                     role="progressbar"
+                                                                     aria-valuenow="{{ application.required_skills_score }}"
+                                                                     aria-valuemin="0"
+                                                                     aria-valuemax="100">
+                                                                </div>
+                                                            </div>
+                                                            <span class="ms-2 badge bg-primary">{{ application.required_skills_score }}%</span>
+                                                        </div>
+                                                        <div class="d-flex flex-wrap gap-1">
+                                                            {% for skill in application.matching_required_skills %}
+                                                                <span class="badge bg-success">{{ skill }}</span>
+                                                            {% endfor %}
+                                                            {% for skill in application.missing_required_skills %}
+                                                                <span class="badge bg-danger">{{ skill }}</span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% if application.matching_preferred_skills %}
+                                                        <div>
+                                                            <div class="d-flex align-items-center mb-1">
+                                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                                    <div class="progress-bar {% if application.preferred_skills_score >= 80 %}bg-success{% elif application.preferred_skills_score >= 60 %}bg-info{% elif application.preferred_skills_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                                         style="width: {{ application.preferred_skills_score }}%"
+                                                                         role="progressbar"
+                                                                         aria-valuenow="{{ application.preferred_skills_score }}"
+                                                                         aria-valuemin="0"
+                                                                         aria-valuemax="100">
+                                                                    </div>
+                                                                </div>
+                                                                <span class="ms-2 badge bg-info">{{ application.preferred_skills_score }}%</span>
+                                                            </div>
+                                                            <div class="d-flex flex-wrap gap-1">
+                                                                {% for skill in application.matching_preferred_skills %}
+                                                                    <span class="badge bg-info">{{ skill }}</span>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">No resume</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">Shortlisted</span>
+                                        </td>
+                                        <td>{{ application.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'jobs:application_detail' application.pk %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if application.resume %}
+                                                    <a href="{{ application.resume.file.url }}" class="btn btn-sm btn-outline-info" target="_blank" title="View Resume">
+                                                        <i class="fas fa-file-alt"></i>
+                                                    </a>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="updateStatus('{{ application.pk }}', 'REJECTED')" title="Reject">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h3>No Applications Yet</h3>
+            <p class="text-muted">There are no applications for this job posting yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the hash from URL or default to 'all'
+        const hash = window.location.hash || '#all';
+        
+        // Activate the correct tab based on the hash
+        const tabToShow = document.querySelector(hash + '-tab');
+        if (tabToShow) {
+            const tab = new bootstrap.Tab(tabToShow);
+            tab.show();
+        }
+
+        // Update active state when tab changes
+        const triggerTabList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tab"]'));
+        triggerTabList.forEach(function(triggerEl) {
+            triggerEl.addEventListener('shown.bs.tab', function(event) {
+                window.location.hash = event.target.getAttribute('href');
+            });
+        });
+    });
+
+    async function updateStatus(applicationId, status) {
+        try {
+            const response = await fetch(`/jobs/applications/${applicationId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({ status: status })
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Failed to update application status');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while updating the status');
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Candidates for {{ job.title }} - {{ job.company }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Ranked Candidates for {{ job.title }}</h2>
+            <p class="text-muted">{{ job.company }} - {{ job.location }}</p>
+        </div>
+    </div>
+
+    {% if ranked_candidates %}
+        <div class="row">
+            <div class="col">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Candidate</th>
+                                <th>Overall Score</th>
+                                <th>Content Match</th>
+                                <th>Skills Match</th>
+                                <th>Experience</th>
+                                <th>Education</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for candidate in ranked_candidates %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ candidate.candidate.get_full_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ candidate.candidate.email }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if candidate.final_score >= 75 %}bg-success{% elif candidate.final_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                 role="progressbar"
+                                                 style="width: {{ candidate.final_score }}%"
+                                                 aria-valuenow="{{ candidate.final_score }}"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                                {{ candidate.final_score|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ candidate.content_similarity|floatformat:1 }}%</td>
+                                    <td>
+                                        Required: {{ candidate.skills_match.required_match_percentage|floatformat:1 }}%
+                                        <br>
+                                        Preferred: {{ candidate.skills_match.preferred_match_percentage|floatformat:1 }}%
+                                    </td>
+                                    <td>{{ candidate.experience_score|floatformat:1 }}%</td>
+                                    <td>{{ candidate.education_score|floatformat:1 }}%</td>
+                                    <td>
+                                        <span class="badge {% if candidate.application.status == 'PENDING' %}bg-warning{% elif candidate.application.status == 'ACCEPTED' %}bg-success{% elif candidate.application.status == 'REJECTED' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {{ candidate.application.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#candidateModal{{ forloop.counter }}">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            {% if candidate.application.status == 'PENDING' %}
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-success"
+                                                        onclick="updateApplicationStatus('{{ candidate.application.id }}', 'ACCEPTED')">
+                                                    <i class="fas fa-check"></i> Accept
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger"
+                                                        onclick="updateApplicationStatus('{{ candidate.application.id }}', 'REJECTED')">
+                                                    <i class="fas fa-times"></i> Reject
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% for candidate in ranked_candidates %}
+            <!-- Candidate Detail Modal -->
+            <div class="modal fade" id="candidateModal{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Candidate Details - {{ candidate.candidate.get_full_name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Contact Information</h6>
+                                    <p>
+                                        <strong>Email:</strong> {{ candidate.candidate.email }}<br>
+                                        <strong>Application Date:</strong> {{ candidate.application.created_at|date:"M d, Y" }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Scores Breakdown</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Overall Score:</strong> {{ candidate.final_score|floatformat:1 }}%</li>
+                                        <li><strong>Content Match:</strong> {{ candidate.content_similarity|floatformat:1 }}%</li>
+                                        <li><strong>Skills Match:</strong> 
+                                            <ul>
+                                                <li>Required: {{ candidate.skills_match.required_match_percentage|floatformat:1 }}%</li>
+                                                <li>Preferred: {{ candidate.skills_match.preferred_match_percentage|floatformat:1 }}%</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Experience Score:</strong> {{ candidate.experience_score|floatformat:1 }}%</li>
+                                        <li><strong>Education Score:</strong> {{ candidate.education_score|floatformat:1 }}%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Top Matching Terms</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for term, score in candidate.matching_terms %}
+                                            <span class="badge bg-info">{{ term }} ({{ score|floatformat:2 }})</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Resume Preview</h6>
+                                    <div class="border p-3 bg-light">
+                                        {{ candidate.resume.parsed_text|linebreaks|truncatewords:100 }}
+                                        <a href="{% url 'resumes:detail' candidate.resume.id %}" class="btn btn-sm btn-outline-primary">View Full Resume</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <a href="{% url 'jobs:application_detail' candidate.application.id %}" class="btn btn-primary">View Application</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            No applications have been received for this job posting yet.
+        </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+    async function updateApplicationStatus(applicationId, status) {
+        try {
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const response = await fetch(`/jobs/applications/${applicationId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ status: status })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update application status');
+            }
+
+            // Reload the page to reflect changes
+            window.location.reload();
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to update application status. Please try again.');
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Candidate Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+    }
+    
+    .welcome-section {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        color: white;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .welcome-section h1 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-section p {
+        opacity: 0.9;
+        margin-bottom: 0;
+    }
+
+    .dashboard-card {
+        background: white;
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%;
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.12);
+    }
+
+    .dashboard-card .card-title {
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        margin-right: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        color: #2c3e50;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 0;
+    }
+
+    .action-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #2c3e50;
+        border-bottom-width: 1px;
+    }
+
+    .table td {
+        vertical-align: middle;
+        color: #2c3e50;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+
+    .skill-badge {
+        background-color: #e9ecef;
+        color: #2c3e50;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        margin: 0.25rem;
+        display: inline-block;
+    }
+
+    .resume-card {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .resume-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(90deg, #4e73df, #224abe);
+    }
+
+    .job-card {
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+
+    .job-card:hover {
+        border-color: #4e73df;
+        transform: translateY(-3px);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header .btn {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="welcome-section">
+        <div class="container">
+            <h1 class="h3">Welcome back, {{ user.get_full_name|default:user.username }}! 👋</h1>
+            <p>Manage your job applications and resume from your personal dashboard.</p>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="row g-4">
+            <!-- Quick Actions -->
+            <div class="col-md-4">
+                <div class="dashboard-card card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Quick Actions</h5>
+                        <div class="d-grid gap-3">
+                            <a href="{% url 'jobs:list' %}" class="btn btn-primary action-btn">
+                                <i class="fas fa-search me-2"></i>Browse Jobs
+                            </a>
+                            <a href="{% url 'resumes:upload' %}" class="btn btn-outline-primary action-btn">
+                                <i class="fas fa-file-upload me-2"></i>Upload Resume
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Statistics -->
+            <div class="col-md-8">
+                <div class="dashboard-card card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Application Statistics</h5>
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon bg-primary bg-opacity-10">
+                                        <i class="fas fa-file-alt text-primary fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value">{{ total_applications }}</div>
+                                        <p class="stat-label">Total Applications</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon bg-success bg-opacity-10">
+                                        <i class="fas fa-check-circle text-success fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value">{{ active_applications_count }}</div>
+                                        <p class="stat-label">Active Applications</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon bg-info bg-opacity-10">
+                                        <i class="fas fa-flag-checkered text-info fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value">{{ completed_applications_count }}</div>
+                                        <p class="stat-label">Completed</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resume Status -->
+            <div class="col-md-8">
+                <div class="dashboard-card card resume-card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Resume Status</h5>
+                        {% if resume %}
+                            <div class="alert alert-success d-flex align-items-center mb-4">
+                                <i class="fas fa-check-circle me-3 fa-lg"></i>
+                                <div>Your resume has been processed successfully!</div>
+                            </div>
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="stat-icon bg-primary bg-opacity-10">
+                                    <i class="fas fa-file-pdf text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ resume.original_filename }}</h6>
+                                    <p class="text-muted small mb-0">
+                                        Uploaded {{ resume.uploaded_at|timesince }} ago
+                                    </p>
+                                </div>
+                                <a href="{% url 'resumes:upload' %}" class="btn btn-outline-primary btn-sm action-btn">
+                                    Update Resume
+                                </a>
+                            </div>
+                            {% if resume.extracted_skills %}
+                                <h6 class="mb-3">Skills Extracted:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for skill in resume.extracted_skills %}
+                                        <span class="skill-badge">
+                                            <i class="fas fa-check-circle me-2"></i>{{ skill }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="upload-icon-wrapper mb-3">
+                                    <i class="fas fa-file-upload fa-3x text-muted"></i>
+                                </div>
+                                <h5 class="mb-3">No Resume Uploaded</h5>
+                                <p class="text-muted mb-4">Upload your resume to start applying for jobs.</p>
+                                <a href="{% url 'resumes:upload' %}" class="btn btn-primary action-btn">
+                                    <i class="fas fa-upload me-2"></i>Upload Resume
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Job Applications -->
+            <div class="col-12">
+                <div class="dashboard-card card">
+                    <div class="card-body">
+                        <div class="section-header">
+                            <h5 class="card-title mb-0">Recent Applications</h5>
+                            <a href="#" class="btn btn-outline-primary">View All</a>
+                        </div>
+                        
+                        {% if applications %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Job Title</th>
+                                            <th>Company</th>
+                                            <th>Applied On</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for application in applications %}
+                                            <tr>
+                                                <td>
+                                                    <a href="{% url 'jobs:detail' application.job.pk %}" class="text-decoration-none fw-medium">
+                                                        {{ application.job.title }}
+                                                    </a>
+                                                </td>
+                                                <td>{{ application.job.company }}</td>
+                                                <td>{{ application.created_at|date:"M d, Y" }}</td>
+                                                <td>
+                                                    <span class="badge bg-{{ application.get_status_color }}">
+                                                        {{ application.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'jobs:application_detail' application.pk %}" 
+                                                       class="btn btn-sm btn-outline-primary action-btn">
+                                                        View Details
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="upload-icon-wrapper mb-3">
+                                    <i class="fas fa-clipboard-list fa-3x text-muted"></i>
+                                </div>
+                                <h5 class="mb-3">No Applications Yet</h5>
+                                <p class="text-muted mb-4">Start applying for jobs to see your applications here.</p>
+                                <a href="{% url 'jobs:list' %}" class="btn btn-primary action-btn">
+                                    <i class="fas fa-search me-2"></i>Browse Jobs
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended Jobs -->
+            <div class="col-12">
+                <div class="dashboard-card card">
+                    <div class="card-body">
+                        <div class="section-header">
+                            <h5 class="card-title mb-0">Recommended Jobs</h5>
+                            <a href="{% url 'jobs:list' %}" class="btn btn-outline-primary">View All Jobs</a>
+                        </div>
+                        
+                        {% if recommended_jobs %}
+                            <div class="row g-4">
+                                {% for job in recommended_jobs %}
+                                    <div class="col-md-6">
+                                        <div class="job-card card h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title mb-2">
+                                                    <a href="{% url 'jobs:detail' job.pk %}" class="text-decoration-none">
+                                                        {{ job.title }}
+                                                    </a>
+                                                </h6>
+                                                <p class="text-muted small mb-3">{{ job.company }}</p>
+                                                <div class="d-flex flex-wrap gap-3 text-muted small mb-3">
+                                                    <span><i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}</span>
+                                                    <span><i class="fas fa-briefcase me-1"></i>{{ job.get_job_type_display }}</span>
+                                                    {% if job.salary_min and job.salary_max %}
+                                                        <span>
+                                                            <i class="fas fa-money-bill-wave me-1"></i>
+                                                            ${{ job.salary_min|floatformat:0 }}k - ${{ job.salary_max|floatformat:0 }}k
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-sm btn-outline-primary action-btn">
+                                                        Learn More
+                                                    </a>
+                                                    <a href="{% url 'jobs:apply' job.pk %}" class="btn btn-sm btn-primary action-btn">
+                                                        Quick Apply
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="upload-icon-wrapper mb-3">
+                                    <i class="fas fa-lightbulb fa-3x text-muted"></i>
+                                </div>
+                                <h5 class="mb-3">No Recommendations Yet</h5>
+                                <p class="text-muted mb-4">Upload your resume to get personalized job recommendations.</p>
+                                <a href="{% url 'resumes:upload' %}" class="btn btn-primary action-btn">
+                                    <i class="fas fa-upload me-2"></i>Upload Resume
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

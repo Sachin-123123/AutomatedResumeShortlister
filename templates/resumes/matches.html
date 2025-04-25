@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% translate "Matching Jobs" %} | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">{% translate "Jobs Matching Your Resume" %}</h1>
+    
+    {% if matching_jobs %}
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for job in matching_jobs %}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'jobs:detail' job.id %}" class="text-decoration-none">
+                                    {{ job.title }}
+                                </a>
+                            </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
+                            <p class="card-text">
+                                <i class="bi bi-geo-alt"></i> {{ job.location }}<br>
+                                <i class="bi bi-briefcase"></i> {{ job.get_job_type_display }}<br>
+                                {% if job.salary_range %}
+                                    <i class="bi bi-cash"></i> {{ job.salary_range }}<br>
+                                {% endif %}
+                                <i class="bi bi-clock"></i> {% translate "Posted" %} {{ job.published_at|timesince }} {% translate "ago" %}
+                            </p>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% for skill in job.required_skills %}
+                                    <span class="badge bg-primary">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                            <a href="{% url 'jobs:detail' job.id %}" class="btn btn-primary">
+                                {% translate "View Details" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            {% translate "No matching jobs found at the moment. Please check back later or update your resume with more skills and experience." %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

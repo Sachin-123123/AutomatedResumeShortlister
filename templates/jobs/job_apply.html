@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Apply for {{ job.title }} - {{ job.company }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Job Overview Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">Applying for:</h2>
+                    <div class="d-flex align-items-start mb-4">
+                        <div>
+                            <h3 class="h5 mb-1">{{ job.title }}</h3>
+                            <p class="text-muted mb-0">{{ job.company }}</p>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-3 text-muted">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-map-marker-alt fa-fw me-2"></i>
+                            <span>{{ job.location }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-briefcase fa-fw me-2"></i>
+                            <span>{{ job.get_job_type_display }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Form -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="h4 mb-4">Submit Your Application</h2>
+                    
+                    <!-- Resume Section -->
+                    <div class="mb-4">
+                        <h3 class="h5 mb-3">Resume</h3>
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <i class="fas fa-file-pdf fa-2x text-primary me-3"></i>
+                            <div>
+                                <h4 class="h6 mb-1">{{ resume.original_filename }}</h4>
+                                <p class="text-muted small mb-0">
+                                    Last updated {{ resume.uploaded_at|timesince }} ago
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'resumes:upload' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-upload me-2"></i>Upload New Resume
+                            </a>
+                        </div>
+                    </div>
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Cover Letter -->
+                        <div class="mb-4">
+                            <label for="cover_letter" class="form-label h5">Cover Letter (Optional)</label>
+                            <p class="text-muted mb-3">
+                                Use this space to introduce yourself and explain why you're a great fit for this role.
+                            </p>
+                            <textarea 
+                                class="form-control" 
+                                id="cover_letter" 
+                                name="cover_letter" 
+                                rows="8"
+                                placeholder="Dear Hiring Manager..."
+                            ></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Application
+                            </button>
+                            <a href="{% url 'jobs:detail' job.pk %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Job Details
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

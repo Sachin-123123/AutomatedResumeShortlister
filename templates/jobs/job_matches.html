@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% translate "Matching Resumes" %} | {{ job.title }} | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'jobs:list' %}">{% translate "Jobs" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'jobs:detail' job.pk %}">{{ job.title }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% translate "Matches" %}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{% translate "Matching Resumes" %}</h1>
+        <div class="text-muted">
+            {{ total_matches }} {% translate "matches found" %}
+        </div>
+    </div>
+
+    {% if matches %}
+        <div class="row row-cols-1 g-4">
+            {% for match in matches %}
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">{{ match.resume.user.get_full_name }}</h5>
+                                    <p class="text-muted mb-0">
+                                        {{ match.resume.user.email }}
+                                    </p>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h4 mb-0">
+                                        <span class="badge bg-primary">{{ match.match_score }}% Match</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <h6>{% translate "Matching Required Skills" %}</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for skill in match.matching_required_skills %}
+                                            <span class="badge bg-success">{{ skill }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>{% translate "Matching Preferred Skills" %}</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for skill in match.matching_preferred_skills %}
+                                            <span class="badge bg-info">{{ skill }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <small class="text-muted">{% translate "Experience" %}</small>
+                                    <p class="mb-0">{{ match.resume.extracted_experience_years }} {% translate "years" %}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted">{% translate "Education" %}</small>
+                                    <p class="mb-0">{{ match.resume.extracted_education }}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <a href="#" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    {% translate "View Resume" %}
+                                </a>
+                                <a href="#" class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-envelope"></i>
+                                    {% translate "Contact Candidate" %}
+                                </a>
+                                {% if match.application and match.application.status == 'PENDING' %}
+                                    <button type="button" class="btn btn-success btn-sm" onclick="updateApplicationStatus('{{ match.application.id }}', 'ACCEPTED')">
+                                        <i class="bi bi-check-circle"></i>
+                                        {% translate "Accept" %}
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="updateApplicationStatus('{{ match.application.id }}', 'REJECTED')">
+                                        <i class="bi bi-x-circle"></i>
+                                        {% translate "Reject" %}
+                                    </button>
+                                {% elif match.application %}
+                                    <span class="badge {% if match.application.status == 'ACCEPTED' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ match.application.get_status_display }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if matches.has_other_pages %}
+            <div class="mt-4">
+                {% bootstrap_pagination matches %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            {% translate "No matching resumes found for this job posting." %}
+        </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+function updateApplicationStatus(applicationId, status) {
+    if (!confirm('Are you sure you want to ' + status.toLowerCase() + ' this candidate?')) {
+        return;
+    }
+
+    fetch(`/jobs/applications/${applicationId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error updating application status: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the application status.');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %} 

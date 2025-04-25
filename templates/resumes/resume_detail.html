@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load resume_filters %}
+
+{% block title %}Resume Details{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header with Actions -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0">Resume Details</h2>
+                    <p class="text-muted mb-0">Uploaded {{ resume.uploaded_at|timesince }} ago</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'resumes:upload' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-upload me-2"></i>Update Resume
+                    </a>
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="fas fa-trash-alt me-2"></i>Delete
+                    </button>
+                </div>
+            </div>
+
+            <!-- Processing Status -->
+            {% if resume.processing_status == 'PROCESSING' %}
+                <div class="alert alert-info">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    Your resume is currently being processed. Please wait...
+                </div>
+            {% elif resume.processing_status == 'FAILED' %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    There was an error processing your resume. Please try uploading again.
+                </div>
+            {% endif %}
+
+            <!-- Resume Content -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <!-- File Information -->
+                    <div class="mb-4">
+                        <h5 class="card-title">
+                            <i class="fas fa-file-alt me-2"></i>Resume Information
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th style="width: 150px;">File Name:</th>
+                                    <td>{{ resume.file.name|filename }}</td>
+                                </tr>
+                                <tr>
+                                    <th>File Type:</th>
+                                    <td>{{ resume.file.name|file_extension }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Upload Date:</th>
+                                    <td>{{ resume.uploaded_at|date:"F j, Y, g:i a" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        {% if resume.processing_status == 'SUCCESS' %}
+                                            <span class="badge bg-success">Ready for Applications</span>
+                                        {% elif resume.processing_status == 'PROCESSING' %}
+                                            <span class="badge bg-warning">Processing</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Processing Failed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Download Original -->
+                    <div class="text-center">
+                        <a href="{{ resume.file.url }}" class="btn btn-outline-primary" download>
+                            <i class="fas fa-download me-2"></i>Download Original Resume
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Matches -->
+            {% if resume.processing_status == 'SUCCESS' %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-bullseye me-2"></i>Job Recommendations
+                            </h5>
+                            <a href="{% url 'jobs:list' %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-search me-2"></i>Browse All Jobs
+                            </a>
+                        </div>
+                        <p class="text-muted">
+                            Start exploring job opportunities that match your profile.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete your resume? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'resumes:delete' resume.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        {% if resume.processing_status == 'PROCESSING' %}
+            // Poll for processing status updates
+            function checkProcessingStatus() {
+                $.get("{% url 'resumes:parse_status' %}", function(data) {
+                    if (data.status !== 'PROCESSING') {
+                        window.location.reload();
+                    }
+                });
+            }
+            
+            // Check every 5 seconds
+            setInterval(checkProcessingStatus, 5000);
+        {% endif %}
+    });
+</script>
+{% endblock %} 

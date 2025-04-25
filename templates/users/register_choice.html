@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Register - Choose Role{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h2 class="mb-4">Choose Your Role</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="fas fa-user-tie fa-3x mb-3 text-primary"></i>
+                            <h3 class="card-title">Recruiter</h3>
+                            <p class="card-text">Post jobs and find the best candidates for your organization.</p>
+                            <a href="{% url 'users:register_recruiter' %}" class="btn btn-primary">Register as Recruiter</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="fas fa-user-graduate fa-3x mb-3 text-success"></i>
+                            <h3 class="card-title">Candidate</h3>
+                            <p class="card-text">Upload your resume and find the perfect job opportunities.</p>
+                            <a href="{% url 'users:register_candidate' %}" class="btn btn-success">Register as Candidate</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

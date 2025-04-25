@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load resume_filters %}
+
+{% block title %}View Resume{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
+                        <h2>Your Resume</h2>
+                        <p class="text-muted">View and manage your resume information</p>
+                    </div>
+                    
+                    {% if resume.processing_status == 'PROCESSING' %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            Your resume is currently being processed...
+                        </div>
+                    {% elif resume.processing_status == 'FAILED' %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            There was an error processing your resume:
+                            <br>
+                            {{ resume.processing_error }}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- File Information -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">File Information</h4>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-file me-2"></i>
+                                        {{ resume.file.name|split:'/:'|last }}
+                                    </div>
+                                    <a href="{{ resume.file.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                        <i class="fas fa-download me-2"></i>Download
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <i class="fas fa-clock me-2"></i>
+                                Uploaded: {{ resume.uploaded_at|date:"F j, Y, g:i a" }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if resume.processing_status == 'SUCCESS' %}
+                        <!-- Extracted Skills -->
+                        <div class="mb-4">
+                            <h4 class="mb-3">Skills</h4>
+                            <div class="card">
+                                <div class="card-body">
+                                    {% if resume.extracted_skills %}
+                                        {% for skill in resume.extracted_skills %}
+                                            <span class="badge bg-primary me-2 mb-2">{{ skill }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted mb-0">No skills were extracted from your resume.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Experience -->
+                        <div class="mb-4">
+                            <h4 class="mb-3">Experience</h4>
+                            <div class="card">
+                                <div class="card-body">
+                                    {% if resume.extracted_experience_years %}
+                                        <p class="mb-0">
+                                            <i class="fas fa-briefcase me-2"></i>
+                                            {{ resume.extracted_experience_years }} years of experience
+                                        </p>
+                                    {% else %}
+                                        <p class="text-muted mb-0">No experience information was extracted.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Education -->
+                        <div class="mb-4">
+                            <h4 class="mb-3">Education</h4>
+                            <div class="card">
+                                <div class="card-body">
+                                    {% if resume.extracted_education %}
+                                        <div class="list-group list-group-flush">
+                                            {% for edu in resume.extracted_education %}
+                                                <div class="list-group-item">
+                                                    <h6 class="mb-1">{{ edu.degree }}</h6>
+                                                    <p class="mb-0 text-muted">{{ edu.field }}</p>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted mb-0">No education information was extracted.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'resumes:upload' %}" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Update Resume
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if resume.processing_status == 'PROCESSING' %}
+    {% block extra_js %}
+    <script>
+        function checkProcessingStatus() {
+            fetch("{% url 'resumes:parse_status' %}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status !== 'PROCESSING') {
+                        window.location.reload();
+                    }
+                });
+        }
+        
+        // Check status every 5 seconds
+        setInterval(checkProcessingStatus, 5000);
+    </script>
+    {% endblock %}
+{% endif %}
+{% endblock %} 

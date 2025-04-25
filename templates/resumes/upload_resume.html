@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Upload Resume{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        min-height: 100vh;
+        background-color: #f8f9fa;
+        padding: 3rem 0;
+    }
+
+    .upload-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .upload-header {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+        margin: -1.25rem -1.25rem 1.5rem;
+    }
+
+    .upload-header i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+    }
+
+    .upload-header h2 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-header p {
+        opacity: 0.9;
+        margin-bottom: 0;
+    }
+    
+    .resume-upload-box {
+        border: 2px dashed #dee2e6;
+        border-radius: 15px;
+        padding: 3rem 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .resume-upload-box.dragover {
+        border-color: #4e73df;
+        background-color: rgba(78, 115, 223, 0.05);
+        transform: scale(1.02);
+    }
+    
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        margin-top: 1rem;
+    }
+    
+    .file-input-wrapper input[type=file] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .selected-file {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background-color: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        display: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    }
+
+    .selected-file.visible {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .selected-file .file-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .selected-file .file-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(78, 115, 223, 0.1);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4e73df;
+    }
+
+    .selected-file .remove-file {
+        cursor: pointer;
+        color: #dc3545;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .selected-file .remove-file:hover {
+        background-color: #fbe7e9;
+    }
+
+    .upload-icon-wrapper {
+        width: 80px;
+        height: 80px;
+        background: rgba(78, 115, 223, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        color: #4e73df;
+        transition: transform 0.3s ease;
+    }
+
+    .resume-upload-box:hover .upload-icon-wrapper {
+        transform: translateY(-5px);
+    }
+
+    .action-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: 15px;
+    }
+
+    .modal-header {
+        background: #f8f9fa;
+        border-bottom: none;
+        padding: 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        border-top: none;
+        padding: 1.5rem;
+    }
+
+    .alert {
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+    }
+
+    .alert i {
+        font-size: 1.1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="upload-card card">
+                    <div class="card-body">
+                        <div class="upload-header">
+                            <i class="fas fa-file-upload"></i>
+                            <h2>{% if existing_resume %}Update{% else %}Upload{% endif %} Resume</h2>
+                            <p>Upload your resume to start applying for jobs</p>
+                        </div>
+                        
+                        {% if existing_resume %}
+                            <div class="alert alert-info d-flex align-items-center">
+                                <i class="fas fa-info-circle me-3"></i>
+                                <div>You already have a resume uploaded. Uploading a new one will replace the existing file.</div>
+                            </div>
+                        {% endif %}
+                        
+                        <form method="post" enctype="multipart/form-data" novalidate id="resumeUploadForm">
+                            {% csrf_token %}
+                            
+                            <div class="resume-upload-box mb-4" id="dropZone">
+                                <div class="upload-icon-wrapper">
+                                    <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                                </div>
+                                <h4 class="mb-3">Drag and drop your resume here</h4>
+                                <p class="text-muted mb-3">or</p>
+                                <div class="file-input-wrapper">
+                                    <button type="button" class="btn btn-primary action-btn">
+                                        <i class="fas fa-folder-open me-2"></i>Browse Files
+                                    </button>
+                                    {{ form.file }}
+                                </div>
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        Accepted formats: PDF, DOCX (Max size: {{ max_size_mb }}MB)
+                                    </small>
+                                </div>
+
+                                <!-- Selected File Display -->
+                                <div class="selected-file" id="selectedFile">
+                                    <div class="file-info">
+                                        <div class="file-icon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1 filename">No file selected</h6>
+                                            <small class="text-muted">Click browse or drag a file to upload</small>
+                                        </div>
+                                    </div>
+                                    <div class="remove-file" title="Remove file">
+                                        <i class="fas fa-times"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if form.file.errors %}
+                                <div class="alert alert-danger d-flex align-items-center">
+                                    <i class="fas fa-exclamation-circle me-3"></i>
+                                    <div>{{ form.file.errors }}</div>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="d-grid gap-3">
+                                <button type="submit" class="btn btn-primary action-btn" id="submitButton" disabled>
+                                    <i class="fas fa-upload me-2"></i>
+                                    {% if existing_resume %}Update{% else %}Upload{% endif %} Resume
+                                </button>
+                                
+                                {% if existing_resume %}
+                                    <button type="button" class="btn btn-danger action-btn" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                        <i class="fas fa-trash-alt me-2"></i>Delete Resume
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if existing_resume %}
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to delete your resume? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary action-btn" data-bs-dismiss="modal">Cancel</button>
+                    <form method="post" action="{% url 'resumes:delete' existing_resume.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger action-btn">
+                            <i class="fas fa-trash-alt me-2"></i>Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.querySelector('input[type="file"]');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const filenameSpan = selectedFileDiv.querySelector('.filename');
+        const submitButton = document.getElementById('submitButton');
+        const removeFileButton = selectedFileDiv.querySelector('.remove-file');
+        
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        // Highlight drop zone when dragging over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        // Handle file selection via input
+        fileInput.addEventListener('change', handleFileSelect, false);
+        
+        // Handle remove file button
+        removeFileButton.addEventListener('click', handleRemoveFile, false);
+        
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+        
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                fileInput.files = files;
+                updateFileDisplay(files[0]);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            if (fileInput.files.length) {
+                updateFileDisplay(fileInput.files[0]);
+            }
+        }
+        
+        function handleRemoveFile(e) {
+            fileInput.value = '';
+            selectedFileDiv.classList.remove('visible');
+            submitButton.disabled = true;
+        }
+        
+        function updateFileDisplay(file) {
+            filenameSpan.textContent = file.name;
+            selectedFileDiv.classList.add('visible');
+            submitButton.disabled = false;
+            
+            // Scroll the selected file into view
+            selectedFileDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+</script>
+{% endblock %} 
