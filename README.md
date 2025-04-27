@@ -109,17 +109,3 @@ AutomatedResumeShortlister/
    - Apply to positions
    - Track application status
 
-## Development
-
-- Run tests: `python manage.py test`
-- Check code style: `flake8`
-- Generate migrations: `python manage.py makemigrations`
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
